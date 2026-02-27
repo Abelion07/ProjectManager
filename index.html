@@ -1,0 +1,1073 @@
+<!doctype html>
+<html lang="hu">
+
+<head>
+    <meta charset="utf-8" />
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
+    </style>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Projekt To-Do Tracker (LocalStorage + JSON)</title>
+    <style>
+        :root {
+            --bg: #0b1020;
+            --panel: #101a33;
+            --panel2: #0e1730;
+            --text: #eaf0ff;
+            --muted: #a9b6d6;
+            --accent: #7c5cff;
+            --accent2: #00d4ff;
+            --good: #41d19a;
+            --warn: #ffcc66;
+            --bad: #ff5c7a;
+            --shadow: 0 12px 30px rgba(0, 0, 0, .35);
+            --radius: 18px;
+            --radius2: 14px;
+            --border: 1px solid rgba(255, 255, 255, .08);
+            --mono: "JetBrains Mono", monospace;
+            --sans: "JetBrains Mono", monospace;
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        body {
+            margin: 0;
+            font-family: var(--sans);
+            color: var(--text);
+            background:
+                radial-gradient(1200px 700px at 20% -10%, rgba(124, 92, 255, .35), transparent 55%),
+                radial-gradient(900px 600px at 90% 0%, rgba(0, 212, 255, .25), transparent 55%),
+                radial-gradient(800px 600px at 60% 110%, rgba(65, 209, 154, .15), transparent 55%),
+                var(--bg);
+            min-height: 100vh;
+        }
+
+        .wrap {
+            max-width: 1150px;
+            margin: 0 auto;
+            padding: 26px 18px 40px
+        }
+
+        header {
+            display: flex;
+            gap: 16px;
+            align-items: flex-end;
+            justify-content: space-between;
+            margin-bottom: 18px;
+        }
+
+        .title {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 22px;
+            letter-spacing: .2px
+        }
+
+        .subtitle {
+            color: var(--muted);
+            font-size: 13px
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            border: var(--border);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, .03);
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width:980px) {
+            .grid {
+                grid-template-columns: 1fr
+            }
+        }
+
+        .card {
+            background: linear-gradient(180deg, rgba(255, 255, 255, .05), rgba(255, 255, 255, .02));
+            border: var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .card .hd {
+            padding: 14px 14px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            background: rgba(255, 255, 255, .03);
+            border-bottom: var(--border);
+        }
+
+        .card .bd {
+            padding: 14px
+        }
+
+        .row {
+            display: flex;
+            gap: 10px;
+            align-items: center
+        }
+
+        .row.wrap {
+            flex-wrap: wrap
+        }
+
+        .btn {
+            border: var(--border);
+            background: rgba(255, 255, 255, .04);
+            color: var(--text);
+            padding: 10px 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform .06s ease, background .15s ease, border-color .15s ease;
+            font-size: 13px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-family: var(--mono);
+            user-select: none;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, .07)
+        }
+
+        .btn:active {
+            transform: translateY(1px)
+        }
+
+        .btn.primary {
+            background: linear-gradient(90deg, rgba(124, 92, 255, .95), rgba(0, 212, 255, .75));
+            border: 1px solid rgba(255, 255, 255, .16);
+        }
+
+        .btn.danger {
+            background: rgba(255, 92, 122, .13);
+            border-color: rgba(255, 92, 122, .35)
+        }
+
+        .btn.good {
+            background: rgba(65, 209, 154, .13);
+            border-color: rgba(65, 209, 154, .35)
+        }
+
+        .btn.small {
+            padding: 7px 9px;
+            border-radius: 10px;
+            font-size: 12px
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            background: rgba(255, 255, 255, .03);
+            border: var(--border);
+            border-radius: 12px;
+            padding: 10px 11px;
+            color: var(--text);
+            outline: none;
+            font-size: 13px;
+            font-family: var(--mono);
+        }
+
+        textarea {
+            min-height: 84px;
+            resize: vertical
+        }
+
+        label {
+            font-size: 12px;
+            color: var(--muted)
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 7px
+        }
+
+        .sep {
+            height: 1px;
+            background: rgba(255, 255, 255, .08);
+            margin: 12px 0
+        }
+
+        .projects {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 280px;
+            overflow: auto;
+            padding-right: 6px;
+        }
+
+        .proj {
+            padding: 12px;
+            border: var(--border);
+            border-radius: 14px;
+            background: rgba(0, 0, 0, .12);
+            cursor: pointer;
+            transition: background .15s ease, border-color .15s ease, transform .06s ease;
+        }
+
+        .proj:hover {
+            background: rgba(255, 255, 255, .05)
+        }
+
+        .proj:active {
+            transform: translateY(1px)
+        }
+
+        .proj.active {
+            border-color: rgba(124, 92, 255, .55);
+            background: rgba(124, 92, 255, .12);
+        }
+
+        .proj .name {
+            font-weight: 700;
+            font-size: 14px;
+            margin-bottom: 6px
+        }
+
+        .proj .meta {
+            display: flex;
+            justify-content: space-between;
+            color: var(--muted);
+            font-size: 12px
+        }
+
+        .bar {
+            height: 10px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, .08);
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .bar>div {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            border-radius: 999px;
+            transition: width .25s ease;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        @media (max-width:900px) {
+            .board {
+                grid-template-columns: 1fr
+            }
+        }
+
+        .col {
+            background: rgba(0, 0, 0, .10);
+            border: var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            min-height: 420px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .col .colhd {
+            padding: 12px 12px 10px;
+            border-bottom: var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            background: rgba(255, 255, 255, .03);
+        }
+
+        .col .colhd .t {
+            font-weight: 800;
+            font-size: 13px;
+            letter-spacing: .3px;
+            text-transform: uppercase
+        }
+
+        .badge {
+            font-family: var(--mono);
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 999px;
+            border: var(--border);
+            background: rgba(255, 255, 255, .04);
+            color: var(--muted);
+        }
+
+        .tasks {
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow: auto
+        }
+
+        .task {
+            border: var(--border);
+            border-radius: 14px;
+            background: rgba(255, 255, 255, .03);
+            padding: 10px 10px 9px;
+        }
+
+        .task .top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .task .ttl {
+            font-weight: 800;
+            font-size: 13.5px;
+            line-height: 1.25
+        }
+
+        .task .desc {
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.35;
+            margin: 6px 0 0
+        }
+
+        .chips {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-top: 8px
+        }
+
+        .chip {
+            font-size: 11px;
+            color: var(--muted);
+            padding: 4px 7px;
+            border-radius: 999px;
+            border: var(--border);
+            background: rgba(0, 0, 0, .12);
+        }
+
+        .prio {
+            font-weight: 800
+        }
+
+        .prio.P0 {
+            color: var(--bad)
+        }
+
+        .prio.P1 {
+            color: var(--warn)
+        }
+
+        .prio.P2 {
+            color: var(--good)
+        }
+
+        .task .actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap
+        }
+
+        .task .footer {
+            margin-top: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            color: var(--muted);
+            font-size: 11.5px;
+        }
+
+        .k {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--muted);
+            border: var(--border);
+            background: rgba(255, 255, 255, .03);
+            padding: 6px 9px;
+            border-radius: 12px;
+            word-break: break-word;
+        }
+
+        .hint {
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.45
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(16, 26, 51, .92);
+            border: var(--border);
+            border-radius: 999px;
+            padding: 10px 14px;
+            box-shadow: var(--shadow);
+            color: var(--text);
+            font-size: 13px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .2s ease, transform .2s ease;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(-4px);
+        }
+
+        a {
+            color: inherit
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrap">
+        <header>
+            <div class="title">
+                <h1>Projekt To-Do Tracker</h1>
+                <div class="subtitle">Offline, LocalStorage mentéssel + JSON export/import. Ideális több projekthez is.
+                </div>
+            </div>
+            <div class="row wrap" style="justify-content:flex-end">
+                <div class="pill" id="statsPill">Betöltés…</div>
+                <button class="btn" id="exportBtn">⬇️ Export JSON</button>
+                <label class="btn" style="cursor:pointer">
+                    ⬆️ Import JSON
+                    <input type="file" id="importFile" accept="application/json" style="display:none">
+                </label>
+                <button class="btn danger" id="resetBtn" title="Mindent töröl (LocalStorage)">🧨 Reset</button>
+            </div>
+        </header>
+
+        <div class="grid">
+            <!-- LEFT: Projects + Add Task -->
+            <div class="card">
+                <div class="hd">
+                    <div style="font-weight:800">Projektek</div>
+                    <button class="btn small primary" id="newProjectBtn">➕ Új projekt</button>
+                </div>
+                <div class="bd">
+                    <div class="projects" id="projectsList"></div>
+
+                    <div class="sep"></div>
+
+                    <div class="row" style="justify-content:space-between;align-items:flex-end;gap:12px">
+                        <div style="font-weight:800">Új feladat</div>
+                        <div class="badge" id="activeProjectBadge">nincs projekt</div>
+                    </div>
+
+                    <div style="height:10px"></div>
+
+                    <div class="field">
+                        <label>Cím</label>
+                        <input id="taskTitle" placeholder="Pl. 'Scraper alap', 'State.json mentés'…" />
+                    </div>
+                    <div style="height:10px"></div>
+
+                    <div class="field">
+                        <label>Leírás (opcionális)</label>
+                        <textarea id="taskDesc" placeholder="Röviden: mit kell csinálni?"></textarea>
+                    </div>
+
+                    <div style="height:10px"></div>
+                    <div class="row">
+                        <div class="field" style="flex:1">
+                            <label>Státusz</label>
+                            <select id="taskStatus">
+                                <option value="backlog">Backlog</option>
+                                <option value="doing">In progress</option>
+                                <option value="done">Done</option>
+                            </select>
+                        </div>
+                        <div class="field" style="flex:1">
+                            <label>Prioritás</label>
+                            <select id="taskPrio">
+                                <option value="P1">P1 (fontos)</option>
+                                <option value="P0">P0 (kritikus)</option>
+                                <option value="P2">P2 (ráér)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="height:10px"></div>
+                    <div class="row">
+                        <div class="field" style="flex:1">
+                            <label>Határidő</label>
+                            <input id="taskDue" type="date" />
+                        </div>
+                        <div class="field" style="flex:1">
+                            <label>Címkék (vesszővel)</label>
+                            <input id="taskTags" placeholder="pl: python, api, ui" />
+                        </div>
+                    </div>
+
+                    <div style="height:12px"></div>
+                    <button class="btn primary" id="addTaskBtn">✅ Feladat hozzáadása</button>
+
+                    <div style="height:10px"></div>
+                    <div class="hint">
+                        Tipp: exportáld néha JSON-ba, így később más projektekhez is tudod újrahasználni /
+                        átköltöztetni.
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT: Board -->
+            <div class="card">
+                <div class="hd">
+                    <div>
+                        <div style="font-weight:900" id="boardTitle">Nincs kiválasztott projekt</div>
+                        <div class="subtitle" id="boardSubtitle">Hozz létre egy projektet bal oldalt.</div>
+                    </div>
+                    <div class="row wrap" style="justify-content:flex-end">
+                        <input id="search" placeholder="🔎 Keresés (cím/desc/tag)…" style="max-width:260px" />
+                        <select id="filterPrio" style="max-width:170px">
+                            <option value="">Minden prioritás</option>
+                            <option value="P0">P0</option>
+                            <option value="P1">P1</option>
+                            <option value="P2">P2</option>
+                        </select>
+                        <select id="filterDue" style="max-width:190px">
+                            <option value="">Minden határidő</option>
+                            <option value="overdue">Lejárt</option>
+                            <option value="today">Ma</option>
+                            <option value="week">7 napon belül</option>
+                            <option value="none">Nincs megadva</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="bd">
+                    <div class="board" id="board">
+                        <div class="col" data-col="backlog">
+                            <div class="colhd">
+                                <div class="t">Backlog</div>
+                                <div class="badge" id="countBacklog">0</div>
+                            </div>
+                            <div class="tasks" id="listBacklog"></div>
+                        </div>
+
+                        <div class="col" data-col="doing">
+                            <div class="colhd">
+                                <div class="t">In progress</div>
+                                <div class="badge" id="countDoing">0</div>
+                            </div>
+                            <div class="tasks" id="listDoing"></div>
+                        </div>
+
+                        <div class="col" data-col="done">
+                            <div class="colhd">
+                                <div class="t">Done</div>
+                                <div class="badge" id="countDone">0</div>
+                            </div>
+                            <div class="tasks" id="listDone"></div>
+                        </div>
+                    </div>
+
+                    <div style="height:12px"></div>
+                    <div class="hint">
+                        <div><span class="k">Mozgatás</span> a kártyán: gyors gombokkal (⏮ ⏭ ✅). Drag&drop nélkül is
+                            kényelmes.</div>
+                        <div style="margin-top:6px"><span class="k">Tipp</span> csinálj projekteket: “Árfigyelő”,
+                            “Tanulás”, “Random ötletek”.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">Mentve.</div>
+
+    <script>
+        // ====== Storage ======
+        const STORAGE_KEY = "todo_tracker_v1";
+
+        const nowISO = () => new Date().toISOString();
+        const uid = () => Math.random().toString(16).slice(2) + "-" + Date.now().toString(16);
+
+        const defaultData = () => ({
+            meta: { version: 1, createdAt: nowISO(), updatedAt: nowISO() },
+            projects: [
+                // demo project (can delete)
+                {
+                    id: uid(),
+                    name: "Minta projekt (törölhető)",
+                    createdAt: nowISO(),
+                    tasks: [
+                        { id: uid(), title: "Küldj egy teszt push-t", desc: "Pushover kulcsok ellenőrzése", status: "done", prio: "P1", due: "", tags: ["pushover", "python"], createdAt: nowISO(), updatedAt: nowISO() },
+                        { id: uid(), title: "Állapot mentés (JSON)", desc: "Utolsó ár/ID eltárolása", status: "doing", prio: "P0", due: "", tags: ["state", "json"], createdAt: nowISO(), updatedAt: nowISO() },
+                        { id: uid(), title: "Scraper váz", desc: "Egy forrásból adat kiszedése", status: "backlog", prio: "P1", due: "", tags: ["scraping"], createdAt: nowISO(), updatedAt: nowISO() }
+                    ]
+                }
+            ],
+            activeProjectId: null
+        });
+
+        function loadData() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (!raw) return defaultData();
+                const data = JSON.parse(raw);
+                // minimal sanity
+                if (!data.projects) return defaultData();
+                return data;
+            } catch (e) {
+                console.warn("loadData failed", e);
+                return defaultData();
+            }
+        }
+
+        function saveData() {
+            data.meta.updatedAt = nowISO();
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            toast("Mentve ✅");
+            renderAll();
+        }
+
+        // ====== UI helpers ======
+        const $ = (id) => document.getElementById(id);
+        const toastEl = $("toast");
+        let toastTimer = null;
+        function toast(msg) {
+            toastEl.textContent = msg;
+            toastEl.classList.add("show");
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => toastEl.classList.remove("show"), 1200);
+        }
+
+        function fmtDue(d) {
+            if (!d) return "—";
+            // keep as YYYY-MM-DD but nicer
+            return d;
+        }
+        function isOverdue(d) {
+            if (!d) return false;
+            const today = new Date(); today.setHours(0, 0, 0, 0);
+            const dd = new Date(d + "T00:00:00");
+            return dd < today;
+        }
+        function isToday(d) {
+            if (!d) return false;
+            const t = new Date(); t.setHours(0, 0, 0, 0);
+            const dd = new Date(d + "T00:00:00");
+            return dd.getTime() === t.getTime();
+        }
+        function withinWeek(d) {
+            if (!d) return false;
+            const t = new Date(); t.setHours(0, 0, 0, 0);
+            const dd = new Date(d + "T00:00:00");
+            const diffDays = (dd - t) / (1000 * 60 * 60 * 24);
+            return diffDays >= 0 && diffDays <= 7;
+        }
+
+        // ====== Data model ops ======
+        let data = loadData();
+
+        function getActiveProject() {
+            const id = data.activeProjectId || (data.projects[0]?.id ?? null);
+            if (!data.activeProjectId && id) data.activeProjectId = id;
+            return data.projects.find(p => p.id === data.activeProjectId) || null;
+        }
+
+        function setActiveProject(id) {
+            data.activeProjectId = id;
+            saveData();
+        }
+
+        function addProject(name) {
+            const p = { id: uid(), name, createdAt: nowISO(), tasks: [] };
+            data.projects.unshift(p);
+            data.activeProjectId = p.id;
+            saveData();
+        }
+
+        function deleteProject(id) {
+            data.projects = data.projects.filter(p => p.id !== id);
+            if (data.activeProjectId === id) {
+                data.activeProjectId = data.projects[0]?.id ?? null;
+            }
+            saveData();
+        }
+
+        function addTaskToActive(task) {
+            const p = getActiveProject();
+            if (!p) return;
+            p.tasks.unshift(task);
+            saveData();
+        }
+
+        function updateTask(taskId, patch) {
+            const p = getActiveProject();
+            if (!p) return;
+            const t = p.tasks.find(x => x.id === taskId);
+            if (!t) return;
+            Object.assign(t, patch, { updatedAt: nowISO() });
+            saveData();
+        }
+
+        function deleteTask(taskId) {
+            const p = getActiveProject();
+            if (!p) return;
+            p.tasks = p.tasks.filter(t => t.id !== taskId);
+            saveData();
+        }
+
+        function moveTask(taskId, dir) {
+            const map = { backlog: 0, doing: 1, done: 2 };
+            const rev = ["backlog", "doing", "done"];
+            const p = getActiveProject();
+            if (!p) return;
+            const t = p.tasks.find(x => x.id === taskId);
+            if (!t) return;
+            const i = map[t.status];
+            const ni = Math.min(2, Math.max(0, i + dir));
+            t.status = rev[ni];
+            t.updatedAt = nowISO();
+            saveData();
+        }
+
+        // ====== Rendering ======
+        function renderProjects() {
+            const list = $("projectsList");
+            list.innerHTML = "";
+            const active = getActiveProject();
+
+            data.projects.forEach(p => {
+                const done = p.tasks.filter(t => t.status === "done").length;
+                const total = p.tasks.length || 0;
+                const pct = total ? Math.round(done / total * 100) : 0;
+
+                const el = document.createElement("div");
+                el.className = "proj" + (active && p.id === active.id ? " active" : "");
+                el.innerHTML = `
+        <div class="name">${escapeHtml(p.name)}</div>
+        <div class="meta">
+          <span>${done}/${total} done</span>
+          <span>${pct}%</span>
+        </div>
+        <div class="bar"><div style="width:${pct}%"></div></div>
+        <div style="display:flex;justify-content:flex-end;margin-top:10px;gap:8px">
+          <button class="btn small" data-act="rename">✏️ Átnevez</button>
+          <button class="btn small danger" data-act="delete">🗑 Töröl</button>
+        </div>
+      `;
+                el.addEventListener("click", (e) => {
+                    const act = e.target?.dataset?.act;
+                    if (act === "delete") {
+                        e.stopPropagation();
+                        if (confirm(`Biztos törlöd a projektet?\n\n${p.name}`)) deleteProject(p.id);
+                        return;
+                    }
+                    if (act === "rename") {
+                        e.stopPropagation();
+                        const nn = prompt("Új név:", p.name);
+                        if (nn && nn.trim()) {
+                            p.name = nn.trim();
+                            saveData();
+                        }
+                        return;
+                    }
+                    setActiveProject(p.id);
+                });
+
+                list.appendChild(el);
+            });
+
+            $("activeProjectBadge").textContent = active ? active.name : "nincs projekt";
+        }
+
+        function applyFilters(tasks) {
+            const q = $("search").value.trim().toLowerCase();
+            const pr = $("filterPrio").value;
+            const du = $("filterDue").value;
+
+            return tasks.filter(t => {
+                // search
+                if (q) {
+                    const blob = (t.title + " " + (t.desc || "") + " " + (t.tags || []).join(" ")).toLowerCase();
+                    if (!blob.includes(q)) return false;
+                }
+                // prio
+                if (pr && t.prio !== pr) return false;
+                // due
+                if (du) {
+                    if (du === "none" && t.due) return false;
+                    if (du === "overdue" && !isOverdue(t.due)) return false;
+                    if (du === "today" && !isToday(t.due)) return false;
+                    if (du === "week" && !withinWeek(t.due)) return false;
+                }
+                return true;
+            });
+        }
+
+        function renderBoard() {
+            const p = getActiveProject();
+            const title = $("boardTitle");
+            const sub = $("boardSubtitle");
+
+            $("listBacklog").innerHTML = "";
+            $("listDoing").innerHTML = "";
+            $("listDone").innerHTML = "";
+
+            if (!p) {
+                title.textContent = "Nincs kiválasztott projekt";
+                sub.textContent = "Hozz létre egy projektet bal oldalt.";
+                $("countBacklog").textContent = "0";
+                $("countDoing").textContent = "0";
+                $("countDone").textContent = "0";
+                return;
+            }
+
+            title.textContent = p.name;
+            sub.textContent = `Feladatok: ${p.tasks.length} • Utolsó mentés: ${new Date(data.meta.updatedAt).toLocaleString()}`;
+
+            const tasks = applyFilters(p.tasks);
+
+            const buckets = {
+                backlog: tasks.filter(t => t.status === "backlog"),
+                doing: tasks.filter(t => t.status === "doing"),
+                done: tasks.filter(t => t.status === "done")
+            };
+
+            $("countBacklog").textContent = buckets.backlog.length;
+            $("countDoing").textContent = buckets.doing.length;
+            $("countDone").textContent = buckets.done.length;
+
+            for (const [status, arr] of Object.entries(buckets)) {
+                const host = status === "backlog" ? $("listBacklog") : status === "doing" ? $("listDoing") : $("listDone");
+                arr.forEach(t => host.appendChild(renderTaskCard(t)));
+            }
+        }
+
+        function renderTaskCard(t) {
+            const el = document.createElement("div");
+            el.className = "task";
+
+            const dueBadge = t.due ? `<span class="chip" title="Határidő">${isOverdue(t.due) ? "⏰ Lejárt: " : "📅 "}${fmtDue(t.due)}</span>` : `<span class="chip">📅 —</span>`;
+            const tags = (t.tags || []).slice(0, 6).map(tag => `<span class="chip">#${escapeHtml(tag)}</span>`).join("");
+            const moreTags = (t.tags || []).length > 6 ? `<span class="chip">+${(t.tags || []).length - 6}</span>` : "";
+
+            el.innerHTML = `
+      <div class="top">
+        <div style="min-width:0">
+          <div class="ttl">${escapeHtml(t.title)}</div>
+          ${t.desc ? `<div class="desc">${escapeHtml(t.desc)}</div>` : ""}
+        </div>
+        <div class="actions">
+          <button class="btn small" data-act="left" title="Balra (Backlog←Doing←Done)">⏮</button>
+          <button class="btn small" data-act="right" title="Jobbra (Backlog→Doing→Done)">⏭</button>
+          <button class="btn small good" data-act="done" title="Kész">✅</button>
+        </div>
+      </div>
+
+      <div class="chips">
+        <span class="chip"><span class="prio ${t.prio}">${t.prio}</span></span>
+        ${dueBadge}
+        ${tags}${moreTags}
+      </div>
+
+      <div class="footer">
+        <span class="k" title="ID">${t.id}</span>
+        <span>
+          <button class="btn small" data-act="edit">✏️</button>
+          <button class="btn small danger" data-act="del">🗑</button>
+        </span>
+      </div>
+    `;
+
+            el.addEventListener("click", (e) => {
+                const act = e.target?.dataset?.act;
+                if (!act) return;
+
+                e.preventDefault();
+                e.stopPropagation();
+
+                if (act === "left") moveTask(t.id, -1);
+                if (act === "right") moveTask(t.id, +1);
+                if (act === "done") updateTask(t.id, { status: "done" });
+
+                if (act === "del") {
+                    if (confirm(`Törlöd ezt a feladatot?\n\n${t.title}`)) deleteTask(t.id);
+                }
+
+                if (act === "edit") {
+                    const nt = prompt("Cím:", t.title);
+                    if (nt && nt.trim()) {
+                        const nd = prompt("Leírás (OK ha üres):", t.desc || "") ?? (t.desc || "");
+                        const nprio = prompt("Prioritás (P0/P1/P2):", t.prio) ?? t.prio;
+                        const ndue = prompt("Határidő (YYYY-MM-DD vagy üres):", t.due || "") ?? (t.due || "");
+                        const ntags = prompt("Címkék vesszővel:", (t.tags || []).join(", ")) ?? (t.tags || []).join(", ");
+                        updateTask(t.id, {
+                            title: nt.trim(),
+                            desc: (nd || "").trim(),
+                            prio: normalizePrio(nprio),
+                            due: (ndue || "").trim(),
+                            tags: parseTags(ntags)
+                        });
+                    }
+                }
+            });
+
+            return el;
+        }
+
+        function renderStats() {
+            const pcount = data.projects.length;
+            const tasks = data.projects.flatMap(p => p.tasks);
+            const done = tasks.filter(t => t.status === "done").length;
+            const total = tasks.length;
+            const pct = total ? Math.round(done / total * 100) : 0;
+            $("statsPill").textContent = `Projektek: ${pcount} • Összes: ${done}/${total} done • ${pct}%`;
+        }
+
+        function renderAll() {
+            renderProjects();
+            renderBoard();
+            renderStats();
+        }
+
+        // ====== Actions ======
+        function normalizePrio(x) {
+            x = (x || "").toUpperCase().trim();
+            if (x === "P0" || x === "P1" || x === "P2") return x;
+            return "P1";
+        }
+        function parseTags(s) {
+            return (s || "")
+                .split(",")
+                .map(x => x.trim())
+                .filter(Boolean)
+                .map(x => x.replace(/^#/, ""));
+        }
+        function escapeHtml(str) {
+            return String(str)
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll('"', "&quot;")
+                .replaceAll("'", "&#039;");
+        }
+
+        $("newProjectBtn").addEventListener("click", () => {
+            const name = prompt("Projekt neve:");
+            if (name && name.trim()) addProject(name.trim());
+        });
+
+        $("addTaskBtn").addEventListener("click", () => {
+            const p = getActiveProject();
+            if (!p) {
+                alert("Előbb hozz létre egy projektet!");
+                return;
+            }
+            const title = $("taskTitle").value.trim();
+            if (!title) { alert("Adj címet a feladatnak!"); return; }
+
+            const task = {
+                id: uid(),
+                title,
+                desc: $("taskDesc").value.trim(),
+                status: $("taskStatus").value,
+                prio: $("taskPrio").value,
+                due: $("taskDue").value,
+                tags: parseTags($("taskTags").value),
+                createdAt: nowISO(),
+                updatedAt: nowISO()
+            };
+
+            addTaskToActive(task);
+
+            // reset inputs
+            $("taskTitle").value = "";
+            $("taskDesc").value = "";
+            $("taskStatus").value = "backlog";
+            $("taskPrio").value = "P1";
+            $("taskDue").value = "";
+            $("taskTags").value = "";
+        });
+
+        ["search", "filterPrio", "filterDue"].forEach(id => {
+            $(id).addEventListener("input", () => renderBoard());
+            $(id).addEventListener("change", () => renderBoard());
+        });
+
+        $("exportBtn").addEventListener("click", () => {
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            const d = new Date();
+            const stamp = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+            a.href = url;
+            a.download = `todo-tracker-export-${stamp}.json`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+            toast("Export kész ⬇️");
+        });
+
+        $("importFile").addEventListener("change", async (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            try {
+                const text = await file.text();
+                const incoming = JSON.parse(text);
+                if (!incoming.projects) throw new Error("Hibás JSON: nincs projects mező.");
+                data = incoming;
+                // ensure meta
+                data.meta = data.meta || { version: 1, createdAt: nowISO(), updatedAt: nowISO() };
+                data.meta.updatedAt = nowISO();
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                toast("Import kész ⬆️");
+                renderAll();
+            } catch (err) {
+                alert("Import hiba: " + err.message);
+            } finally {
+                e.target.value = "";
+            }
+        });
+
+        $("resetBtn").addEventListener("click", () => {
+            if (confirm("Biztos törölsz mindent? (LocalStorage reset)")) {
+                localStorage.removeItem(STORAGE_KEY);
+                data = defaultData();
+                toast("Reset kész 🧨");
+                renderAll();
+            }
+        });
+
+        // Initial render
+        renderAll();
+    </script>
+</body>
+
+</html>
